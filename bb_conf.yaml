@@ -1,0 +1,10 @@
+data_directory: "data_dst"
+
+echo:
+    serial_number: "A597C94353544C324E202020FF18412B"
+    page_size: 4096
+
+force:
+    serial_number: "C45EFBEB53544C324E202020FF18472D"
+    page_size: 4096
+

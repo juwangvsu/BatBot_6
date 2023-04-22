@@ -7,29 +7,43 @@ import math
 import os
 import sys
 import logging
+import yaml
 
 import bb_log
 
 from datetime import datetime
 from m4 import M4
 
+bat_log = bb_log.get_log()
+
 def bin2dec(bin_data):
     return [((y << 8) | x) for x, y in zip(bin_data[::2], bin_data[1::2])]
     
+def get_timestamp_now():
+    return datetime.now().strftime('%Y%m%d_%H%M%S%f')[:-3]
+
+
 class BatBot:
     
     def __init__(self):
     
         self.parent_directory = os.path.dirname(os.path.abspath(__file__))
-                    
-        self.echo_sercom = M4("A597C94353544C324E202020FF18412B", 4096)
-        self.force_sercom = M4("C45EFBEB53544C324E202020FF18472D", 4096)
+                
+        with open('bb_conf.yaml') as fd:
         
-        self.data_directory = self.parent_directory + '/data_dst'
-        
-        if not os.path.exists(self.data_directory):
-            os.makedirs(self.data_directory)
-        
+            bb_conf = yaml.safe_load(fd)
+                        
+            self.echo_sercom = M4(bb_conf['echo']['serial_number'], bb_conf['echo']['page_size'], bat_log)
+            
+            self.force_sercom = M4(bb_conf['force']['serial_number'], bb_conf['force']['page_size'], bat_log)
+            
+            self.data_directory = self.parent_directory + f"/{bb_conf['data_directory']}"
+            
+            if not os.path.exists(self.data_directory):
+                os.makedirs(self.data_directory)
+                
+            self.run_directory = self.data_directory + f"/{get_timestamp_now()}"
+            os.makedirs(self.run_directory)
         
     def start_run(self):
         self.echo_sercom.write([0x10])
@@ -54,8 +68,6 @@ class BatBot:
             if self.force_sercom.read(1) == b'\x01':
                 break
                 
-
-                
     def _get_data(self, inst, channel):
         
         inst.write([0x30 | channel])
@@ -75,9 +87,9 @@ class BatBot:
         force_right = self._get_data(self.force_sercom, 0x00)
         force_left = self._get_data(self.force_sercom, 0x01)
                 
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S%f')[:-3]
+        timestamp = get_timestamp_now()
         
-        dump_path = f"{self.data_directory}/{timestamp}.bin"
+        dump_path = f"{self.run_directory}/{timestamp}.bin"
         
         with open(dump_path, 'wb') as fp:
             fp.write(echo_right + echo_left + force_right + force_left)
@@ -111,14 +123,13 @@ if __name__ == '__main__':
     nruns = 0
     plot_interval = 3
     
-    if sys.argv[1] == "inf":
+    if len(sys.argv) < 2:
         nruns = -1
     else:
         nruns = int(sys.argv[1])
     
     instance = BatBot()
     
-    bat_log = bb_log.get_log()
 
     nruns_idx = 0
     time_start = datetime.now()
@@ -193,7 +204,8 @@ if __name__ == '__main__':
             nruns_idx += 1
                 
         except KeyboardInterrupt:
-            print("Interrupted")
+            print("")
+            bat_log.info("Interrupted")
             break
         
     
