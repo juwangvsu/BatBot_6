@@ -4,7 +4,7 @@
 
 const int samp_duration = 30;
 const int num_pages = (samp_duration + 4.4)/4.4;
-const int page_size = 4096;
+const int page_size = 2048;
 
 __attribute__ ((section(".dmabuffers"), used)) 
 uint16_t right_in_buf[num_pages][page_size], left_in_buf[num_pages][page_size];

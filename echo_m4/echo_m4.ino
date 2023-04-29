@@ -37,7 +37,7 @@ static DmacDescriptor descriptor1 __attribute__((aligned(16)));
 
 // Number of bytes per page (double the number of uint16_t readings)
 // Here Brandon is defining a "Page" as a set of data  (4096 bytes)
-constexpr int PAGE_SIZE = 4096;
+constexpr int PAGE_SIZE = 2048;
 // It takes ~4.4ms to collect 4096/2=2048 readings, so round up to the nearest
 // multiple of 4.4
 constexpr int NUM_PAGES = (DURATION + 4.4) / 4.4;
