@@ -36,6 +36,7 @@ class BatBot:
             self.echo_sercom = M4(bb_conf['echo']['serial_number'], bb_conf['echo']['page_size'], bat_log)
             
           #  self.force_sercom = M4(bb_conf['force']['serial_number'], bb_conf['force']['page_size'], bat_log)
+
             
             self.data_directory = self.parent_directory + f"/{bb_conf['data_directory']}"
             
@@ -65,8 +66,7 @@ class BatBot:
             
        #     self.force_sercom.write([0x20])
                 
-       #     if self.force_sercom.read(1) == b'\x01':
-       #         break
+
                 
     def _get_data(self, inst, channel):
         
