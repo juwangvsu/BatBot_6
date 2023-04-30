@@ -11,6 +11,7 @@ import yaml
 
 import bb_log
 
+from subprocess import Popen, PIPE
 from datetime import datetime
 from m4 import M4
 
@@ -33,8 +34,9 @@ class BatBot:
         
             bb_conf = yaml.safe_load(fd)
                         
-            self.echo_sercom = M4(bb_conf['echo']['serial_number'], bb_conf['echo']['page_size'], bat_log)
+            self.echo_sercom = M4(bb_conf['echo']['serial_number'], bb_conf['echo']['page_size'], bb_conf['echo']['baud'], bat_log)
             
+            self.force_info = bb_conf['force']
           #  self.force_sercom = M4(bb_conf['force']['serial_number'], bb_conf['force']['page_size'], bat_log)
 
             
@@ -145,7 +147,9 @@ if __name__ == '__main__':
     #echo_left_total, echo_right_total, force_left_total, force_right_total = [],[],[],[]
     
     echo_left_total, echo_right_total = [],[]
-
+    
+    force_process = Popen(['python3.8', 'bb_force.py', f"{instance.force_info['serial_number']}", f"{instance.force_info['page_size']}", f"{instance.force_info['baud']}"], stdin=PIPE, stdout=PIPE, stderr=PIPE)
+    
     while True:
 
         try:
@@ -216,7 +220,7 @@ if __name__ == '__main__':
             bat_log.info("Interrupted")
             break
         
-    
+    force_process.kill()
     time_finish = datetime.now() - time_start
     bat_log.info(f"{nruns} runs took {time_finish}")
         
