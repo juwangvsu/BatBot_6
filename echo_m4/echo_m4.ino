@@ -64,7 +64,7 @@ Adafruit_ZeroDMA left_in_dma, right_in_dma, out_dma;
 
 void setup() {
   //TODO Serial doesn't work for the first second or two - DON'T WORRY ABOUT THIS, the delay takes care of it.
-  //JETSON_SERIAL.begin(128000);  // only use this line if you are using wires to hook up the jetson.
+  JETSON_SERIAL.begin(128000);  // only use this line if you are using wires to hook up the jetson.
   // TVCU_SERIAL.begin(9600);
   delay(2000);
 
@@ -81,7 +81,7 @@ void setup() {
 
   // Initialize peripherals -> These functions are defined at the bottom. Essentially just setting up the board's peripherals
   clock_init();
-  adc_init(A1, ADC0);
+  adc_init(A2, ADC0);
   adc_init(A3, ADC1);
   dac_init();
   dma_init();
