@@ -11,7 +11,6 @@ import yaml
 
 import bb_log
 
-from subprocess import Popen, PIPE
 from datetime import datetime
 from m4 import M4
 
@@ -34,11 +33,9 @@ class BatBot:
         
             bb_conf = yaml.safe_load(fd)
                         
-            self.echo_sercom = M4(bb_conf['echo']['serial_number'], bb_conf['echo']['page_size'], bb_conf['echo']['baud'], bat_log)
+            self.echo_sercom = M4(bb_conf['echo']['serial_number'], bb_conf['echo']['page_size'], bat_log)
             
-            self.force_info = bb_conf['force']
           #  self.force_sercom = M4(bb_conf['force']['serial_number'], bb_conf['force']['page_size'], bat_log)
-
             
             self.data_directory = self.parent_directory + f"/{bb_conf['data_directory']}"
             
@@ -68,7 +65,8 @@ class BatBot:
             
        #     self.force_sercom.write([0x20])
                 
-
+       #     if self.force_sercom.read(1) == b'\x01':
+       #         break
                 
     def _get_data(self, inst, channel):
         
@@ -100,6 +98,12 @@ class BatBot:
         
         #return [echo_right, echo_left, force_left, force_right]
         return [echo_right, echo_left]
+        
+    def send_amp_stop(self):
+        self.echo_sercom.write([0xff])
+        
+    def send_amp_start(self):
+        self.echo_sercom.write([0xfe])
 
     
 #Jilun Code for Analysing Force Data
@@ -148,7 +152,7 @@ if __name__ == '__main__':
     
     echo_left_total, echo_right_total = [],[]
     
-    force_process = Popen(['python3.8', 'bb_force.py', f"{instance.force_info['serial_number']}", f"{instance.force_info['page_size']}", f"{instance.force_info['baud']}"], stdin=PIPE, stdout=PIPE, stderr=PIPE)
+    instance.send_amp_start()
     
     while True:
 
@@ -220,7 +224,7 @@ if __name__ == '__main__':
             bat_log.info("Interrupted")
             break
         
-    force_process.kill()
+    instance.send_amp_stop()
     time_finish = datetime.now() - time_start
     bat_log.info(f"{nruns} runs took {time_finish}")
         

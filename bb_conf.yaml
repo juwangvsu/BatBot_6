@@ -1,12 +1,15 @@
 data_directory: "data_dst"
 
 echo:
-    serial_number: "C45EFBEB53544C324E202020FF18472D"
+    #serial_number: "C45EFBEB53544C324E202020FF18472D"
+    serial_number: "FBD7447F5351523450202020FF0E320A"
     page_size: 2048
 
 force:
-    serial_number: "A597C94353544C324E202020FF18412B"
+    #serial_number: "A597C94353544C324E202020FF18412B"
+    #serial_number: "64D0C38643251535020202052032E0FF"
     page_size: 2048
+    serial_number: "683C0D465351523450202020FF0E2302"
 
 motor_pantilt:
     serial_number: "13613280"
@@ -17,3 +20,4 @@ motor_right:
 motor_left:
     serial_number: "13613200"
     
+

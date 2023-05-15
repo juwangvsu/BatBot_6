@@ -61,10 +61,13 @@ uint16_t left_in_index, right_in_index;  //These essentially function as counter
 // Here, three "ZeroDMA jobs" are initialized. The 'jobs' aren't started here, but later on they will be used to transfer data from the microphones to the UART.
 Adafruit_ZeroDMA left_in_dma, right_in_dma, out_dma;
 
+#define AMP_FORCE_STOP() (TCC0->CTRLBSET.reg |= TCC_CTRLBSET_CMD_STOP)
+#define AMP_FORCE_RETRIGGER() (TCC0->CTRLBSET.reg |= TCC_CTRLBSET_CMD_RETRIGGER)
+
 
 void setup() {
   //TODO Serial doesn't work for the first second or two - DON'T WORRY ABOUT THIS, the delay takes care of it.
-  JETSON_SERIAL.begin(128000);  // only use this line if you are using wires to hook up the jetson.
+  //JETSON_SERIAL.begin(128000);  // only use this line if you are using wires to hook up the jetson.
   // TVCU_SERIAL.begin(9600);
   delay(2000);
 
@@ -81,12 +84,19 @@ void setup() {
 
   // Initialize peripherals -> These functions are defined at the bottom. Essentially just setting up the board's peripherals
   clock_init();
-  adc_init(A2, ADC0);
-  adc_init(A3, ADC1);
+  adc_init(A2, ADC1);
+  adc_init(A5, ADC0);
+
+  ADC1->INPUTCTRL.bit.MUXPOS = ADC_INPUTCTRL_MUXPOS_AIN1_Val;
+  ADC0->INPUTCTRL.bit.MUXPOS = ADC_INPUTCTRL_MUXPOS_AIN2_Val;
   dac_init();
   dma_init();
-  timer_init();
+  //timer_init();
+  //amp_enable_timer();
 
+  // disable amplifier
+  digitalWrite(12, HIGH);
+  
   // Trigger both ADCs to enter free-running mode
   ADC0->SWTRIG.bit.START = 1;
   ADC1->SWTRIG.bit.START = 1;
@@ -115,12 +125,13 @@ void loop() {
       left_in_index = 0;
       right_in_index = 0;
 
-
       // NOTE: Below, the "DMA->CTRL.bit.DMAENABLE = 0" syntax writes the VALUE 0 to the REGISTER POSITION "DMAENABLE" of the REGISTER "CTRL" of the "DMAC" PERIPHERAL
       // Similar syntax can be used to write to any other register, e.g. DAC->CTRLA.bit.ENABLE = 1 or something...
       // The names of the registers can be found in the SAMD51 datasheet
       //DAC->CTRLA.bit.ENABLE = 1;
       DMAC->Channel[2].CHCTRLA.bit.ENABLE = 1;
+
+      
       // Start all DMA jobs
       DMAC->CTRL.bit.DMAENABLE = 0;                                         // Temporarily disables the DMA so that it's properties can be rewritten. 
 
@@ -151,7 +162,16 @@ void loop() {
           reinterpret_cast<uint8_t *>(right_in_buffers[right_in_index++]),
           sizeof(uint16_t) * PAGE_SIZE);
       }
+
     }
+      else if(opcode == 0xff){
+        digitalWrite(12, HIGH);
+      }
+
+      else if(opcode == 0xfe){
+        digitalWrite(12, LOW);
+      }
+    //AMP_FORCE_RETRIGGER();
   }
 
   /*
@@ -219,11 +239,47 @@ void timer_init() {
   TCC0->PER.reg = 12;                            // Set-up the PER (period) register 50Hz PWM
   while (TCC0->SYNCBUSY.bit.PER);
   
-  TCC0->CC[0].reg = 6;                           // Set-up the CC (counter compare), channel 0 register for 50% duty-cycle
+  TCC0->CC[3].reg = 11;                           // Set-up the CC (counter compare), channel 0 register for 50% duty-cycle
   while (TCC0->SYNCBUSY.bit.CC0);
 
   TCC0->CTRLA.bit.ENABLE = 1;                        // Enable timer TCC0
   while (TCC0->SYNCBUSY.bit.ENABLE);
+
+  const uint32_t port_group = 0;
+  const uint32_t pin = 23;
+
+ 
+  PORT->Group[port_group].PINCFG[pin].reg |= (PORT_PINCFG_PMUXEN | PORT_PINCFG_DRVSTR);
+
+  //PA23, F -> 0x5
+  PORT->Group[port_group].PMUX[pin >> 1].reg |= PORT_PMUX_PMUXO(0x6); 
+}
+
+void amp_enable_timer(void){
+
+  TCC1->CTRLA.reg = TCC_CTRLA_PRESCALER_DIV2 | TCC_CTRLA_PRESCSYNC_PRESC;
+
+  TCC1->WAVE.reg = TCC_WAVE_WAVEGEN_NPWM;
+  while(TCC1->SYNCBUSY.reg);
+
+  TCC1->PER.reg = 10;
+  while(TCC1->SYNCBUSY.reg);
+
+  TCC1->CC[7].reg = 9;
+  while(TCC1->SYNCBUSY.reg);
+
+  
+  TCC1->CTRLA.bit.ENABLE = 1;
+  while(TCC1->SYNCBUSY.reg);
+  
+  const uint32_t port_group = 0;
+  const uint32_t pin = 23;
+
+  PORT->Group[port_group].PINCFG[pin].reg |= (PORT_PINCFG_PMUXEN | PORT_PINCFG_DRVSTR);
+
+  //PA23, F -> 0x5
+  PORT->Group[port_group].PMUX[pin >> 1].reg |= PORT_PMUX_PMUXO(0x5);
+
 }
 
 void dma_init() {
@@ -290,6 +346,10 @@ void dma_init() {
   }
 }
 
+
+const uint32_t dac_pin = g_APinDescription[A0].ulPin;
+const EPortType dac_port_grp = g_APinDescription[A0].ulPort;
+
 void dac_init() {
   // Disable DAC
   DAC->CTRLA.bit.ENABLE = 0;
@@ -298,6 +358,8 @@ void dac_init() {
   // Use an external reference voltage (see errata; the internal reference is busted)
   DAC->CTRLB.reg = DAC_CTRLB_REFSEL_VREFPB;
   while (DAC->SYNCBUSY.bit.ENABLE || DAC->SYNCBUSY.bit.SWRST);
+
+  PORT->Group[dac_port_grp].PINCFG[dac_pin].reg |= PORT_PINCFG_DRVSTR;
 
   // Enable channel 0
   DAC->DACCTRL[0].bit.ENABLE = 1;
@@ -315,7 +377,7 @@ void adc_init(int inpselCFG, Adc *ADCx) {
   ADCx->INPUTCTRL.reg = ADC_INPUTCTRL_MUXNEG_GND;   // No Negative input (Internal Ground)
   while( ADCx->SYNCBUSY.reg & ADC_SYNCBUSY_INPUTCTRL );
   
-  ADCx->INPUTCTRL.bit.MUXPOS = g_APinDescription[inpselCFG].ulADCChannelNumber; // Selection for the positive ADC input
+  //ADCx->INPUTCTRL.bit.MUXPOS = g_APinDescription[inpselCFG].ulADCChannelNumber; // Selection for the positive ADC input
   while( ADCx->SYNCBUSY.reg & ADC_SYNCBUSY_INPUTCTRL );
   
   ADCx->CTRLA.bit.PRESCALER = ADC_CTRLA_PRESCALER_DIV4_Val; // Frequency set. SAMD51 Datasheet pp. 1323. f(CLK_ADC) = fGLCK/2^(1+4) = 1.5MHz
@@ -352,9 +414,9 @@ void generate_chirp()
   const double phi = 0;
 
   // Initial frequency (Hz)
-  const double f0 = 105e3;
+  const double f0 = 150e3;
   // Final frequency (Hz)
-  const double f1 = 5e3;
+  const double f1 = 80e3;
 
   // "Chirpyness" or rate of frequency change
   const double k = (f1 - f0) / t1;
@@ -374,4 +436,5 @@ void generate_chirp()
 void stop_callback(Adafruit_ZeroDMA *dma) {
      DMAC->Channel[2].CHCTRLA.bit.ENABLE = 0;
      //DAC->CTRLA.bit.ENABLE = 0;, maybe we could address it like this? test later
+     
 }

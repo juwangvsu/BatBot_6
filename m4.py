@@ -19,7 +19,7 @@ def search_comports(serial_number):
 
 class M4:
     
-    def __init__(self, serial_number, page_size, baud, bat_log):
+    def __init__(self, serial_number, page_size, bat_log):
     
         self.page_size = page_size
                 
@@ -32,7 +32,7 @@ class M4:
             exit()
             
         
-        self.sercom = serial.Serial(self.port.device, baud)
+        self.sercom = serial.Serial(self.port.device)
             
         self.bat_log.info(f"Found device {serial_number} on {self.port.device}")
             
