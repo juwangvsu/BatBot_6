@@ -10,8 +10,9 @@ def search_comports(serial_number):
     for port in serial.tools.list_ports.comports():
         
         if type(port.serial_number) != str:
+
             continue
-        
+
         if port.serial_number == serial_number:
             return port
     
@@ -19,20 +20,20 @@ def search_comports(serial_number):
 
 class M4:
     
-    def __init__(self, serial_number, page_size, baud, bat_log):
+    def __init__(self, serial_number, page_size, bat_log):
     
         self.page_size = page_size
                 
-        self.port = search_comports(serial_number)
         
+        self.port = search_comports(serial_number)
+       
         self.bat_log = bat_log
                     
-        if self.port == "None":
+        if str(self.port) == "None":
             self.bat_log.critical(f"Could not find device with serial number {serial_number}")
             exit()
             
-        
-        self.sercom = serial.Serial(self.port.device, baud)
+        self.sercom = serial.Serial(self.port.device)
             
         self.bat_log.info(f"Found device {serial_number} on {self.port.device}")
             

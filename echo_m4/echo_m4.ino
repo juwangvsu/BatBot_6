@@ -354,7 +354,7 @@ void generate_chirp()
   // Initial frequency (Hz)
   const double f0 = 105e3;
   // Final frequency (Hz)
-  const double f1 = 5e3;
+  const double f1 = 25e3;
 
   // "Chirpyness" or rate of frequency change
   const double k = (f1 - f0) / t1;

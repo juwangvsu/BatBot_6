@@ -190,25 +190,25 @@ if __name__ == '__main__':
                  # Plot
 
 
-                #echo_left_ax.plot(echo_left_total)
-                #echo_right_ax.plot(echo_right_total)
+                echo_left_ax.plot(echo_left_total)
+                echo_right_ax.plot(echo_right_total)
                 #force_left_ax.plot(force_left_total)
                 #force_right_ax.plot(force_right_total)
             
-                #echo_right_spec.specgram(echo_right_total, 1024, 937500, noverlap=512)
-                #echo_right_spec.set_ylim(0, 937500/2)
+                echo_right_spec.specgram(echo_right_total, 1024, 937500, noverlap=512)
+                echo_right_spec.set_ylim(0, 937500/2)
 
                 # Leave a status message
-                #echo_left_ax.set_title('{} echo runs - {}'.format(nruns_idx, str(elapsed)[:-7]))
-                #echo_right_ax.set_title('{} runs/min'.format(int(nruns_idx/max(elapsed.seconds,1)*60)))
-                #echo_left_ax.set_ylim(0, 4096)
-                #echo_right_ax.set_ylim(0, 4096)
+                echo_left_ax.set_title('{} echo runs - {}'.format(nruns_idx, str(elapsed)[:-7]))
+                echo_right_ax.set_title('{} runs/min'.format(int(nruns_idx/max(elapsed.seconds,1)*60)))
+                echo_left_ax.set_ylim(0, 4096)
+                echo_right_ax.set_ylim(0, 4096)
                 #force_left_ax.set_title('Force Data')
                 #force_left_ax.set_ylim(0, 100)
                 #force_right_ax.set_ylim(0, 100)
                 
                 #Showing the plot
-                #plt.show(block=False)
+                plt.show(block=False)
 
                 #Deleting old data
                 #echo_right_total, echo_left_total, force_left_total, force_right_total = [],[],[],[]
@@ -216,7 +216,7 @@ if __name__ == '__main__':
 
                 # Show the plot without blocking (there's no separate UI
                 # thread)
-                #plt.pause(0.001)
+                plt.pause(0.001)
 
                        
             nruns_idx += 1
